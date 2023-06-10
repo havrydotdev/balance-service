@@ -8,25 +8,7 @@ COPY ./go.sum ./
 
 RUN go mod download
 
-COPY ./cmd ./cmd
-
-COPY ./configs ./configs
-
-COPY ./docs ./docs
-
-COPY ./internal ./internal
-
-COPY ./pkg ./pkg
-
-COPY ./models ./models
-
-COPY ./schema ./schema
-
-COPY ./database ./database
-
-COPY ./scripts ./scripts
-
-COPY ./.env ./.env
+COPY ./ ./
 
 # install migare cli so we can use it in prod stage
 RUN GOBIN=/usr/local/bin/ go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
