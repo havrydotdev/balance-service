@@ -13,6 +13,13 @@ import (
 	"github.com/spf13/viper"
 )
 
+// @title Balance Service
+// @version 1.0
+// @description Service for working with user`s balance
+
+// @host localhost:8080
+// @BasePath /
+
 func main() {
 	err := initConfig()
 	if err != nil {

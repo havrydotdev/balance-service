@@ -3,15 +3,36 @@ FROM golang:alpine AS builder
 
 WORKDIR /build
 
-ADD go.mod .
+COPY ./go.mod ./
+COPY ./go.sum ./
 
-COPY . .
+RUN go mod download
 
-# build 
-RUN go build -o balance cmd/main.go
+COPY ./cmd ./cmd
+
+COPY ./configs ./configs
+
+COPY ./docs ./docs
+
+COPY ./internal ./internal
+
+COPY ./pkg ./pkg
+
+COPY ./models ./models
+
+COPY ./schema ./schema
+
+COPY ./database ./database
+
+COPY ./scripts ./scripts
+
+COPY ./.env ./.env
 
 # install migare cli so we can use it in prod stage
 RUN GOBIN=/usr/local/bin/ go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
+
+# build 
+RUN go build -o balance cmd/main.go
 
 # PROD STAGE
 # use alpine to reduce image`s size

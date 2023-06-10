@@ -5,6 +5,9 @@ import (
 	"github.com/gavrylenkoIvan/balance-service/pkg/logging"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	echoSwagger "github.com/swaggo/echo-swagger"
+
+	_ "github.com/gavrylenkoIvan/balance-service/docs"
 )
 
 type Handler struct {
@@ -28,5 +31,8 @@ func (h *Handler) InitRoutes() *echo.Echo {
 	r.POST("/top-up", h.topUp)
 	r.POST("/debit", h.debit)
 	r.POST("/transfer", h.transfer)
+
+	r.GET("/swagger/*", echoSwagger.WrapHandler)
+
 	return r
 }

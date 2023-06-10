@@ -22,7 +22,7 @@ type logger struct {
 	logger *zap.SugaredLogger
 }
 
-type errorResponse struct {
+type ErrorResponse struct {
 	Message string `json:"msg"`
 }
 
@@ -61,7 +61,7 @@ func (l *logger) Infof(msgf string, args ...interface{}) {
 
 func (l *logger) ErrorResponse(msg string, err int, c echo.Context) error {
 	l.logger.Error(msg)
-	return c.JSON(err, errorResponse{
+	return c.JSON(err, ErrorResponse{
 		Message: msg,
 	})
 }

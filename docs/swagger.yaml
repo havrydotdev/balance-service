@@ -1,0 +1,242 @@
+basePath: /
+definitions:
+  handler.transactionResponse:
+    properties:
+      balance:
+        type: number
+      user_id:
+        type: integer
+    type: object
+  logging.ErrorResponse:
+    properties:
+      msg:
+        type: string
+    type: object
+  models.Input:
+    properties:
+      amount:
+        type: number
+      user_id:
+        type: integer
+    type: object
+  models.Transaction:
+    properties:
+      amount:
+        type: number
+      date:
+        type: string
+      id:
+        type: integer
+      operation:
+        type: string
+      user_id:
+        type: integer
+    type: object
+  models.TransferInput:
+    properties:
+      amount:
+        type: number
+      to_id:
+        type: integer
+      user_id:
+        type: integer
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: Service for working with user`s balance
+  title: Balance Service
+  version: "1.0"
+paths:
+  /balance/{id}:
+    get:
+      description: Returns user`s balance
+      operationId: get-balance
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.transactionResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/logging.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/logging.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/logging.ErrorResponse'
+        default:
+          description: ""
+          schema:
+            $ref: '#/definitions/logging.ErrorResponse'
+      summary: Get balance
+      tags:
+      - balance
+  /debit:
+    post:
+      consumes:
+      - application/json
+      description: Decreases user`s balance by input.Amount
+      operationId: debit
+      parameters:
+      - description: debit input
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/models.Input'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.transactionResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/logging.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/logging.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/logging.ErrorResponse'
+        default:
+          description: ""
+          schema:
+            $ref: '#/definitions/logging.ErrorResponse'
+      summary: Debit from card
+      tags:
+      - balance
+  /top-up:
+    post:
+      consumes:
+      - application/json
+      description: Increases user`s balance by input.Amount
+      operationId: top-up
+      parameters:
+      - description: top up input
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/models.Input'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.transactionResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/logging.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/logging.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/logging.ErrorResponse'
+        default:
+          description: ""
+          schema:
+            $ref: '#/definitions/logging.ErrorResponse'
+      summary: Top up
+      tags:
+      - balance
+  /transactions/{id}:
+    get:
+      description: Returns user`s transactions
+      operationId: get-transactions
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Transaction'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/logging.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/logging.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/logging.ErrorResponse'
+        default:
+          description: ""
+          schema:
+            $ref: '#/definitions/logging.ErrorResponse'
+      summary: Get transactions
+      tags:
+      - balance
+  /transfer:
+    post:
+      consumes:
+      - application/json
+      description: Transfer money from one user to another
+      operationId: transfer
+      parameters:
+      - description: transfer info
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/models.TransferInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.transactionResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/logging.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/logging.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/logging.ErrorResponse'
+        default:
+          description: ""
+          schema:
+            $ref: '#/definitions/logging.ErrorResponse'
+      summary: Transfer money
+      tags:
+      - balance
+swagger: "2.0"
