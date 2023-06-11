@@ -1,12 +1,10 @@
 package service
 
 import (
-	"encoding/json"
-	"net/http"
-
 	"github.com/gavrylenkoIvan/balance-service/internal/repo"
 	"github.com/gavrylenkoIvan/balance-service/models"
 	"github.com/gavrylenkoIvan/balance-service/pkg/logging"
+	"github.com/gavrylenkoIvan/balance-service/pkg/utils"
 )
 
 type UserService struct {
@@ -43,20 +41,5 @@ func (s *UserService) GetBalance(id int, currency string) (float32, error) {
 		return 0, err
 	}
 
-	return convert(euro, currency)
-}
-
-func convert(euro float32, currency string) (float32, error) {
-	if currency == "" {
-		return euro, nil
-	}
-
-	resp, err := http.Get("http://api.exchangeratesapi.io/v1/latest?access_key=5bb179314fdbfaa6a839358e571d426f&base=EUR&symbols=" + currency)
-	if err != nil {
-		return 0, err
-	}
-
-	var get models.Response
-	json.NewDecoder(resp.Body).Decode(&get)
-	return euro * get.Rates[currency], nil
+	return utils.Convert(euro, currency)
 }

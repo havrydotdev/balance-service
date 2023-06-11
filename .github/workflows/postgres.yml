@@ -42,7 +42,7 @@ jobs:
       - name: Apply migrations
         run: make up
 
-      - name: Connect to PostgreSQL
+      - name: Run go test
         # Runs a script that creates a PostgreSQL table, populates
         # the table with data, and then retrieves the data
         run: |
