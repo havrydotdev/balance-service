@@ -9,8 +9,8 @@ import (
 )
 
 type transactionResponse struct {
-	Balance float32 `json:"balance"`
 	UserId  int     `json:"user_id"`
+	Balance float32 `json:"balance"`
 }
 
 // @Summary Transfer money
@@ -28,19 +28,17 @@ type transactionResponse struct {
 func (h *Handler) transfer(c echo.Context) error {
 	var input models.TransferInput
 	if err := c.Bind(&input); err != nil {
-		h.log.ErrorResponse(err.Error(), http.StatusBadRequest, c)
-		return err
+		return h.log.ErrorResponse(http.StatusBadRequest, err)
 	}
 
 	balance, err := h.s.Transfer(input)
 	if err != nil {
-		h.log.ErrorResponse(err.Error(), http.StatusInternalServerError, c)
-		return err
+		return h.log.ErrorResponse(http.StatusInternalServerError, err)
 	}
 
 	return c.JSON(http.StatusOK, transactionResponse{
-		Balance: balance,
 		UserId:  input.UserId,
+		Balance: balance,
 	})
 }
 
@@ -59,19 +57,17 @@ func (h *Handler) transfer(c echo.Context) error {
 func (h *Handler) debit(c echo.Context) error {
 	var input models.Input
 	if err := c.Bind(&input); err != nil {
-		h.log.ErrorResponse(err.Error(), http.StatusBadRequest, c)
-		return err
+		return h.log.ErrorResponse(http.StatusBadRequest, err)
 	}
 
 	balance, err := h.s.Debit(input)
 	if err != nil {
-		h.log.ErrorResponse(err.Error(), http.StatusInternalServerError, c)
-		return err
+		return h.log.ErrorResponse(http.StatusInternalServerError, err)
 	}
 
 	return c.JSON(http.StatusOK, transactionResponse{
-		Balance: balance,
 		UserId:  input.UserId,
+		Balance: balance,
 	})
 }
 
@@ -90,19 +86,17 @@ func (h *Handler) debit(c echo.Context) error {
 func (h *Handler) topUp(c echo.Context) error {
 	var input models.Input
 	if err := c.Bind(&input); err != nil {
-		h.log.ErrorResponse(err.Error(), http.StatusBadRequest, c)
-		return err
+		return h.log.ErrorResponse(http.StatusBadRequest, err)
 	}
 
 	balance, err := h.s.TopUp(input)
 	if err != nil {
-		h.log.ErrorResponse(err.Error(), http.StatusInternalServerError, c)
-		return err
+		return h.log.ErrorResponse(http.StatusInternalServerError, err)
 	}
 
 	return c.JSON(http.StatusOK, transactionResponse{
-		Balance: balance,
 		UserId:  input.UserId,
+		Balance: balance,
 	})
 }
 
@@ -120,14 +114,12 @@ func (h *Handler) topUp(c echo.Context) error {
 func (h *Handler) getBalance(c echo.Context) error {
 	userId, err := strconv.Atoi(c.Param("user_id"))
 	if err != nil {
-		h.log.ErrorResponse(err.Error(), http.StatusBadRequest, c)
-		return err
+		return h.log.ErrorResponse(http.StatusBadRequest, err)
 	}
 
 	balance, err := h.s.GetBalance(userId, c.QueryParam("currency"))
 	if err != nil {
-		h.log.ErrorResponse(err.Error(), http.StatusInternalServerError, c)
-		return err
+		return h.log.ErrorResponse(http.StatusNotFound, err)
 	}
 
 	return c.JSON(http.StatusOK, transactionResponse{
@@ -150,16 +142,14 @@ func (h *Handler) getBalance(c echo.Context) error {
 func (h *Handler) getTransactions(c echo.Context) error {
 	userId, err := strconv.Atoi(c.Param("user_id"))
 	if err != nil {
-		h.log.ErrorResponse(err.Error(), http.StatusBadRequest, c)
-		return err
+		return h.log.ErrorResponse(http.StatusBadRequest, err)
 	}
 
 	page := models.PageFromRequest(c)
 
 	transactions, err := h.s.GetTransactions(userId, page)
 	if err != nil {
-		h.log.ErrorResponse(err.Error(), http.StatusInternalServerError, c)
-		return err
+		return h.log.ErrorResponse(http.StatusInternalServerError, err)
 	}
 
 	return c.JSON(http.StatusOK, transactions)

@@ -157,7 +157,7 @@ func (r *UserRepo) GetBalance(id int) (float32, error) {
 	query := fmt.Sprintf("SELECT balance FROM %s WHERE id = $1", usersTable)
 	err := r.db.Get(&balance, query, id)
 	if err != nil {
-		return 0, err
+		return 0, errors.New("user not found")
 	}
 
 	r.log.LogRepo("GET", "GetBalance", true, balance)

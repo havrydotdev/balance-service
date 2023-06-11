@@ -13,7 +13,7 @@ type Logger interface {
 	Fatalf(msgf string, args ...interface{})
 	Info(msg string)
 	Infof(msgf string, args ...interface{})
-	ErrorResponse(msg string, err int, c echo.Context) error
+	ErrorResponse(code int, err error) error
 	Infow(fields Fields)
 	LogRepo(method, info string, ok bool, resp interface{})
 }
@@ -59,11 +59,9 @@ func (l *logger) Infof(msgf string, args ...interface{}) {
 	l.logger.Infof(ln(msgf), args...)
 }
 
-func (l *logger) ErrorResponse(msg string, err int, c echo.Context) error {
-	l.logger.Error(msg)
-	return c.JSON(err, ErrorResponse{
-		Message: msg,
-	})
+func (l *logger) ErrorResponse(code int, err error) error {
+	l.logger.Error(err)
+	return echo.NewHTTPError(code, err.Error())
 }
 
 func (l *logger) Infow(fields Fields) {
