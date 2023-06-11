@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"errors"
 	"net/http"
 	"strconv"
 
@@ -29,6 +30,12 @@ func (h *Handler) transfer(c echo.Context) error {
 	var input models.TransferInput
 	if err := c.Bind(&input); err != nil {
 		return h.log.ErrorResponse(http.StatusBadRequest, err)
+	}
+
+	if input.UserId <= 0 {
+		return h.log.ErrorResponse(http.StatusBadRequest, errors.New("incorrect user id"))
+	} else if input.ToId <= 0 {
+		return h.log.ErrorResponse(http.StatusBadRequest, errors.New("incorrect to id"))
 	}
 
 	balance, err := h.s.Transfer(input)
@@ -60,6 +67,10 @@ func (h *Handler) debit(c echo.Context) error {
 		return h.log.ErrorResponse(http.StatusBadRequest, err)
 	}
 
+	if input.UserId <= 0 {
+		return h.log.ErrorResponse(http.StatusBadRequest, errors.New("incorrect user id"))
+	}
+
 	balance, err := h.s.Debit(input)
 	if err != nil {
 		return h.log.ErrorResponse(http.StatusInternalServerError, err)
@@ -87,6 +98,10 @@ func (h *Handler) topUp(c echo.Context) error {
 	var input models.Input
 	if err := c.Bind(&input); err != nil {
 		return h.log.ErrorResponse(http.StatusBadRequest, err)
+	}
+
+	if input.UserId <= 0 {
+		return h.log.ErrorResponse(http.StatusBadRequest, errors.New("incorrect user id"))
 	}
 
 	balance, err := h.s.TopUp(input)
@@ -117,6 +132,10 @@ func (h *Handler) getBalance(c echo.Context) error {
 		return h.log.ErrorResponse(http.StatusBadRequest, err)
 	}
 
+	if userId <= 0 {
+		return h.log.ErrorResponse(http.StatusBadRequest, errors.New("incorrect user id"))
+	}
+
 	balance, err := h.s.GetBalance(userId, c.QueryParam("currency"))
 	if err != nil {
 		return h.log.ErrorResponse(http.StatusNotFound, err)
@@ -143,6 +162,10 @@ func (h *Handler) getTransactions(c echo.Context) error {
 	userId, err := strconv.Atoi(c.Param("user_id"))
 	if err != nil {
 		return h.log.ErrorResponse(http.StatusBadRequest, err)
+	}
+
+	if userId <= 0 {
+		return h.log.ErrorResponse(http.StatusBadRequest, errors.New("incorrect user id"))
 	}
 
 	page := models.PageFromRequest(c)

@@ -130,10 +130,19 @@ func (r *UserRepo) ChangeBalance(input models.Input, action string, operation st
 	insert := fmt.Sprintf("INSERT INTO %s (user_id, amount, operation, date) VALUES ($1, $2, $3, $4)",
 		transactionsTable)
 
-	_, err = tx.Exec(insert, input.UserId, input.Amount, operation, time.Now())
+	result, err := tx.Exec(insert, input.UserId, input.Amount, operation, time.Now())
 	if err != nil {
 		tx.Rollback()
 		return 0, err
+	}
+
+	count, err := result.RowsAffected()
+	if err != nil {
+		return 0, err
+	}
+
+	if count == 0 {
+		return 0, errors.New("user not found")
 	}
 
 	return balance, nil
@@ -146,7 +155,7 @@ func (r *UserRepo) GetTransactions(id int, page models.Page) ([]models.Transacti
 
 	err := r.db.Select(&transactions, query, id)
 	if err != nil {
-		return nil, err
+		return nil, errors.New("user not found")
 	}
 
 	return transactions, nil

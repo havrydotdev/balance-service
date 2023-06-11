@@ -25,4 +25,8 @@ INSERT INTO transactions (user_id, amount, operation, date) VALUES (1, 30, '', N
 INSERT INTO transactions (user_id, amount, operation, date) VALUES (2, 101, '', NOW());
 INSERT INTO transactions (user_id, amount, operation, date) VALUES (2, 32, '', NOW());
 INSERT INTO transactions (user_id, amount, operation, date) VALUES (3, 62, '', NOW());
-INSERT INTO transactions (user_id, amount, operation, date) VALUES (3, 51, '', NOW());
+INSERT INTO transactions (user_id, amount, operation, date) VALUES (3, 32, '', NOW());
+INSERT INTO transactions (user_id, amount, operation, date) VALUES (3, 190, '', NOW());
+INSERT INTO transactions (user_id, amount, operation, date) VALUES (3, 305, '', NOW());
+INSERT INTO transactions (user_id, amount, operation, date) VALUES (3, 101, '', NOW());
+INSERT INTO transactions (user_id, amount, operation, date) VALUES (3, 103, '', NOW());
