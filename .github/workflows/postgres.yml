@@ -45,7 +45,8 @@ jobs:
       - name: Connect to PostgreSQL
         # Runs a script that creates a PostgreSQL table, populates
         # the table with data, and then retrieves the data
-        run: go test 
+        run: |
+          go test github.com/gavrylenkoIvan/balance-service/internal/handler
         # Environment variables used by the `client.js` script to create
         # a new PostgreSQL table.
         env:
