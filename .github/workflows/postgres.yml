@@ -1,4 +1,4 @@
-name: PostgreSQL Service Example
+name: Go test with postgres
 on: push
 
 jobs:
@@ -33,16 +33,19 @@ jobs:
 
       # Performs a clean installation of all dependencies in the `package.json` file
       # For more information, see https://docs.npmjs.com/cli/ci.html
-      - name: Install dependencies
+      - name: Install migrate
         run: |
           curl -s https://packagecloud.io/install/repositories/golang-migrate/migrate/script.deb.sh | sudo bash
           sudo apt-get update
           sudo apt-get install migrate
 
+      - name: Apply migrations
+        run: make up
+
       - name: Connect to PostgreSQL
         # Runs a script that creates a PostgreSQL table, populates
         # the table with data, and then retrieves the data
-        run: make up
+        run: go test 
         # Environment variables used by the `client.js` script to create
         # a new PostgreSQL table.
         env:
