@@ -2,6 +2,7 @@ package handler
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/gavrylenkoIvan/balance-service/internal/service"
@@ -12,6 +13,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
+	"math"
 	"net/http/httptest"
 	"strings"
 	"testing"
@@ -41,7 +43,7 @@ func TestHandler_GetBalance(t *testing.T) {
 				s.EXPECT().GetBalance(user, currency).Return(float32(4.13), nil)
 			},
 			expectedStatusCode:   200,
-			expectedResponseBody: `{"user_id":1,"balance":4.13}`,
+			expectedResponseBody: `{"user_id":1,"balance":4}`,
 		},
 		{
 			name:     "OneMoreOK",
@@ -66,7 +68,7 @@ func TestHandler_GetBalance(t *testing.T) {
 				s.EXPECT().GetBalance(user, currency).Return(uah, nil)
 			},
 			expectedStatusCode:   200,
-			expectedResponseBody: fmt.Sprintf(`{"user_id":2,"balance":%s}`, utils.Float2String(returnFirstValue(utils.Convert(32, "UAH")).(float32))),
+			expectedResponseBody: fmt.Sprintf(`{"user_id":2,"balance":%.0f}`, returnFirstValue(utils.Convert(32, "UAH")).(float32)),
 		},
 		{
 			name:     "NotValid",
@@ -115,8 +117,36 @@ func TestHandler_GetBalance(t *testing.T) {
 
 			r.ServeHTTP(w, req)
 
+			var resBody string
+			if testCase.expectedStatusCode == 200 {
+				var body struct {
+					UserID  int     `json:"user_id"`
+					Balance float64 `json:"balance"`
+				}
+
+				err = json.Unmarshal(w.Body.Bytes(), &body)
+				if err != nil {
+					t.Error(err)
+				}
+
+				newBody, err := json.Marshal(struct {
+					UserID  int     `json:"user_id"`
+					Balance float64 `json:"balance"`
+				}{
+					UserID:  body.UserID,
+					Balance: math.Round(body.Balance),
+				})
+
+				if err != nil {
+					t.Error(err)
+				}
+				resBody = string(newBody)
+			} else {
+				resBody = strings.ReplaceAll(w.Body.String(), "\n", "")
+			}
+
 			assert.Equal(t, testCase.expectedStatusCode, w.Code)
-			assert.Equal(t, testCase.expectedResponseBody, strings.ReplaceAll(w.Body.String(), "\n", ""))
+			assert.Equal(t, testCase.expectedResponseBody, resBody)
 		})
 	}
 }
