@@ -24,3 +24,6 @@ psql-init:
 init-dev:
 	make psql-init
 	make build
+
+test:
+	go test ./...
