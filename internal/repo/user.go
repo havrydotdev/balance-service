@@ -4,11 +4,10 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"time"
-
 	"github.com/gavrylenkoIvan/balance-service/models"
 	"github.com/gavrylenkoIvan/balance-service/pkg/logging"
 	"github.com/jmoiron/sqlx"
+	"time"
 )
 
 type User interface {
@@ -52,7 +51,7 @@ func (r *UserRepo) Transfer(input models.TransferInput) (float32, error) {
 	balance, err := r.IncreaseBalanceTx(models.Input{
 		UserId: input.ToId,
 		Amount: input.Amount,
-	}, fmt.Sprintf("Top-up by transfer %f EUR", input.Amount), tx)
+	}, fmt.Sprintf("Top-up by transfer %fEUR", input.Amount), tx)
 	if err != nil {
 		tx.Rollback()
 		return 0, err
@@ -96,43 +95,44 @@ func (r *UserRepo) IncreaseBalanceTx(input models.Input, operation string, tx *s
 }
 
 func (r *UserRepo) DecreaseBalanceTx(input models.Input, operation string, tx *sql.Tx) (float32, error) {
-	var balance float32
-	query := fmt.Sprintf("SELECT balance FROM %s WHERE id = $1", usersTable)
-	err := r.db.Get(&balance, query, input.UserId)
-	if err != nil {
-		return 0, err
-	}
-
-	if balance-input.Amount < 0 {
-		return 0, errors.New("not enough money to perform purchase")
-	}
-
 	return r.ChangeBalance(input, "-", operation, tx)
 }
 
 func (r *UserRepo) ChangeBalance(input models.Input, action string, operation string, tx *sql.Tx) (float32, error) {
+	var balance float32
+
+	check := fmt.Sprintf("SELECT balance FROM %s WHERE id = $1", usersTable)
+	err := r.db.Get(&balance, check, input.UserId)
+	if err != nil {
+		return 0, err
+	}
+
+	if balance-input.Amount < 0 && action == "-" {
+		return 0, errors.New("not enough money to perform purchase")
+	}
+
 	query := fmt.Sprintf("UPDATE %s SET balance = balance %s %f WHERE id = $1 RETURNING balance",
 		usersTable, action, input.Amount)
 
-	res := tx.QueryRow(query, input.UserId)
-	if res.Err() != nil {
-		tx.Rollback()
-		return 0, res.Err()
+	res, err := tx.Exec(query, input.UserId)
+	if err != nil {
+		return 0, err
 	}
 
-	var balance float32
-	err := res.Scan(&balance)
+	affected, err := res.RowsAffected()
 	if err != nil {
-		tx.Rollback()
 		return 0, err
+	}
+
+	if affected == 0 {
+		return 0, errors.New("user not found")
 	}
 
 	insert := fmt.Sprintf("INSERT INTO %s (user_id, amount, operation, date) VALUES ($1, $2, $3, $4)",
 		transactionsTable)
 
-	result, err := tx.Exec(insert, input.UserId, input.Amount, operation, time.Now())
+	result, err := tx.Exec(insert, input.UserId, input.Amount, operation, time.Now().Format("01-02-2006 15:04:05"))
 	if err != nil {
-		tx.Rollback()
 		return 0, err
 	}
 
@@ -142,10 +142,14 @@ func (r *UserRepo) ChangeBalance(input models.Input, action string, operation st
 	}
 
 	if count == 0 {
-		return 0, errors.New("user not found")
+		return 0, errors.New("failed to insert new transaction, rollback")
 	}
 
-	return balance, nil
+	if action == "+" {
+		return balance + input.Amount, nil
+	} else {
+		return balance - input.Amount, nil
+	}
 }
 
 func (r *UserRepo) GetTransactions(id int, page models.Page) ([]models.Transaction, error) {
@@ -155,7 +159,10 @@ func (r *UserRepo) GetTransactions(id int, page models.Page) ([]models.Transacti
 
 	err := r.db.Select(&transactions, query, id)
 	if err != nil {
-		return nil, errors.New("user not found")
+		if err == sql.ErrNoRows {
+			return nil, errors.New("user not found")
+		}
+		return nil, err
 	}
 
 	return transactions, nil
@@ -166,7 +173,11 @@ func (r *UserRepo) GetBalance(id int) (float32, error) {
 	query := fmt.Sprintf("SELECT balance FROM %s WHERE id = $1", usersTable)
 	err := r.db.Get(&balance, query, id)
 	if err != nil {
-		return 0, errors.New("user not found")
+		if err == sql.ErrNoRows {
+			return 0, errors.New("user not found")
+		}
+
+		return 0, err
 	}
 
 	r.log.LogRepo("GET", "GetBalance", true, balance)

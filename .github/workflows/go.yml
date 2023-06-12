@@ -25,4 +25,4 @@ jobs:
       run: go build cmd/main.go
 
     - name: Test
-      run: go test github.com/gavrylenkoIvan/balance-service/internal/handler
+      run: go test ./...
