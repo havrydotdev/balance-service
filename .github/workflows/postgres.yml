@@ -1,4 +1,4 @@
-name: Test postgres
+name: Test postgres migrations
 on: push
 
 jobs:
