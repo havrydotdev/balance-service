@@ -66,7 +66,7 @@ func TestHandler_GetBalance(t *testing.T) {
 				s.EXPECT().GetBalance(user, currency).Return(uah, nil)
 			},
 			expectedStatusCode:   200,
-			expectedResponseBody: fmt.Sprintf(`{"user_id":2,"balance":%.2f}`, returnFirstValue(utils.Convert(32, "UAH")).(float32)),
+			expectedResponseBody: fmt.Sprintf(`{"user_id":2,"balance":%s}`, utils.Float2String(returnFirstValue(utils.Convert(32, "UAH")).(float32))),
 		},
 		{
 			name:     "NotValid",

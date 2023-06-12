@@ -3,6 +3,7 @@ package utils
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 	"net/http"
 	"strconv"
 	"testing"
@@ -38,4 +39,12 @@ func ParseTime(value string, t *testing.T) time.Time {
 	}
 
 	return timeAt
+}
+
+func Float2String(xF float32) string {
+	if math.Trunc(float64(xF)) == float64(xF) {
+		return fmt.Sprintf("%.0f", xF)
+	} else {
+		return fmt.Sprintf("%.2f", xF)
+	}
 }
