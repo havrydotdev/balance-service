@@ -175,5 +175,10 @@ func (h *Handler) getTransactions(c echo.Context) error {
 		return h.log.ErrorResponse(http.StatusInternalServerError, err)
 	}
 
-	return c.JSON(http.StatusOK, transactions)
+	result := make([]models.TransactionDTO, 0, len(transactions))
+	for i := 0; i < len(transactions); i++ {
+		result = append(result, transactions[i].ToTransactionDTO())
+	}
+
+	return c.JSON(http.StatusOK, result)
 }

@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"testing"
+	"time"
 
 	"github.com/gavrylenkoIvan/balance-service/models"
 )
@@ -27,4 +29,13 @@ func Convert(euro float32, currency string) (float32, error) {
 	}
 
 	return float32(result), nil
+}
+
+func ParseTime(value string, t *testing.T) time.Time {
+	timeAt, err := time.Parse(time.DateTime, value)
+	if err != nil {
+		t.Error(err)
+	}
+
+	return timeAt
 }

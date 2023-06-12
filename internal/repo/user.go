@@ -153,7 +153,7 @@ func (r *UserRepo) ChangeBalance(input models.Input, action string, operation st
 }
 
 func (r *UserRepo) GetTransactions(id int, page models.Page) ([]models.Transaction, error) {
-	var transactions []models.Transaction
+	var transactions []models.TransactionDTO
 	query := fmt.Sprintf("SELECT * FROM %s WHERE user_id = $1 ORDER BY %s LIMIT %d OFFSET %d",
 		transactionsTable, page.Sort, page.Limit, (page.Page-1)*page.Limit)
 
@@ -165,7 +165,23 @@ func (r *UserRepo) GetTransactions(id int, page models.Page) ([]models.Transacti
 		return nil, err
 	}
 
-	return transactions, nil
+	result := make([]models.Transaction, 0, len(transactions))
+	for i := 0; i < len(transactions); i++ {
+		t, err := time.Parse(time.DateTime, transactions[i].Date)
+		if err != nil {
+			return nil, err
+		}
+
+		result = append(result, models.Transaction{
+			ID:        transactions[i].ID,
+			UserId:    transactions[i].UserId,
+			Amount:    transactions[i].Amount,
+			Operation: transactions[i].Operation,
+			Date:      t,
+		})
+	}
+
+	return result, nil
 }
 
 func (r *UserRepo) GetBalance(id int) (float32, error) {

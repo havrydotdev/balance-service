@@ -4,32 +4,22 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/labstack/echo/v4"
-	"net/http/httptest"
-	"strings"
-	"testing"
-	"time"
-
 	"github.com/gavrylenkoIvan/balance-service/internal/service"
 	mock_service "github.com/gavrylenkoIvan/balance-service/internal/service/mocks"
 	"github.com/gavrylenkoIvan/balance-service/models"
 	"github.com/gavrylenkoIvan/balance-service/pkg/logging"
 	"github.com/gavrylenkoIvan/balance-service/pkg/utils"
 	"github.com/golang/mock/gomock"
+	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
+	"net/http/httptest"
+	"strings"
+	"testing"
+	"time"
 )
 
 func returnFirstValue(values ...interface{}) interface{} {
 	return values[0]
-}
-
-func parseTime(value string, t *testing.T) time.Time {
-	timeAt, err := time.Parse(time.RFC3339, value)
-	if err != nil {
-		t.Error(err)
-	}
-
-	return timeAt
 }
 
 func TestHandler_GetBalance(t *testing.T) {
@@ -156,11 +146,11 @@ func TestHandler_GetTransactions(t *testing.T) {
 					UserId:    1,
 					Amount:    30,
 					Operation: "",
-					Date:      parseTime("2023-06-10T00:13:35.315271Z", t),
+					Date:      utils.ParseTime(time.DateTime, t),
 				}}, nil)
 			},
 			expectedStatusCode:   200,
-			expectedResponseBody: `[{"id":1,"user_id":1,"amount":30,"operation":"","date":"2023-06-10T00:13:35.315271Z"}]`,
+			expectedResponseBody: fmt.Sprintf(`[{"id":1,"user_id":1,"amount":30,"operation":"","date":"%s"}]`, time.DateTime),
 		},
 		{
 			name:   "Multiple values + sort by ID",
@@ -176,17 +166,17 @@ func TestHandler_GetTransactions(t *testing.T) {
 					UserId:    2,
 					Amount:    101,
 					Operation: "",
-					Date:      parseTime("2023-06-10T00:13:35.315271Z", t),
+					Date:      utils.ParseTime(time.DateTime, t),
 				}, {
 					ID:        3,
 					UserId:    2,
 					Amount:    32,
 					Operation: "",
-					Date:      parseTime("2023-06-10T00:13:35.315271Z", t),
+					Date:      utils.ParseTime(time.DateTime, t),
 				}}, nil)
 			},
 			expectedStatusCode:   200,
-			expectedResponseBody: `[{"id":2,"user_id":2,"amount":101,"operation":"","date":"2023-06-10T00:13:35.315271Z"},{"id":3,"user_id":2,"amount":32,"operation":"","date":"2023-06-10T00:13:35.315271Z"}]`,
+			expectedResponseBody: fmt.Sprintf(`[{"id":2,"user_id":2,"amount":101,"operation":"","date":"%s"},{"id":3,"user_id":2,"amount":32,"operation":"","date":"%s"}]`, time.DateTime, time.DateTime),
 		},
 		{
 			name:   "Multiple values + sort by ID + 2 page",
@@ -202,17 +192,18 @@ func TestHandler_GetTransactions(t *testing.T) {
 					UserId:    3,
 					Amount:    101,
 					Operation: "",
-					Date:      parseTime("2023-06-11T11:00:37.236094Z", t),
+					Date:      utils.ParseTime(time.DateTime, t),
 				}, {
 					ID:        9,
 					UserId:    3,
 					Amount:    103,
 					Operation: "",
-					Date:      parseTime("2023-06-11T11:00:37.236094Z", t),
+					Date:      utils.ParseTime(time.DateTime, t),
 				}}, nil)
 			},
-			expectedStatusCode:   200,
-			expectedResponseBody: `[{"id":8,"user_id":3,"amount":101,"operation":"","date":"2023-06-11T11:00:37.236094Z"},{"id":9,"user_id":3,"amount":103,"operation":"","date":"2023-06-11T11:00:37.236094Z"}]`,
+			expectedStatusCode: 200,
+			expectedResponseBody: fmt.Sprintf(`[{"id":8,"user_id":3,"amount":101,"operation":"","date":"%s"},{"id":9,"user_id":3,"amount":103,"operation":"","date":"%s"}]`,
+				time.DateTime, time.DateTime),
 		},
 	}
 

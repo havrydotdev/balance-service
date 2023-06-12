@@ -6,6 +6,7 @@ import (
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/gavrylenkoIvan/balance-service/models"
 	"github.com/gavrylenkoIvan/balance-service/pkg/logging"
+	"github.com/gavrylenkoIvan/balance-service/pkg/utils"
 	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/assert"
 	"testing"
@@ -108,8 +109,8 @@ func TestUserRepository_GetTransactions(t *testing.T) {
 			name: "Ok",
 			mock: func(userID int) {
 				rows := sqlmock.NewRows([]string{"id", "user_id", "amount", "operation", "date"}).
-					AddRow(1, 1, 10, "Debit by transfer 10EUR", time.Now()).
-					AddRow(2, 1, 5, "Top-up by transfer 5EUR", time.Now())
+					AddRow(1, 1, 10, "Debit by transfer 10EUR", time.Now().Format(time.DateTime)).
+					AddRow(2, 1, 5, "Top-up by transfer 5EUR", time.Now().Format(time.DateTime))
 				mock.ExpectQuery(fmt.Sprintf("SELECT (.+) FROM %s WHERE (.+) ORDER BY (.+) LIMIT (.+) OFFSET (.+)", transactionsTable)).
 					WithArgs(userID).WillReturnRows(rows)
 			},
@@ -120,14 +121,14 @@ func TestUserRepository_GetTransactions(t *testing.T) {
 					UserId:    1,
 					Amount:    10,
 					Operation: "Debit by transfer 10EUR",
-					Date:      time.Now(),
+					Date:      utils.ParseTime(time.Now().Format(time.DateTime), t),
 				},
 				{
 					ID:        2,
 					UserId:    1,
 					Amount:    5,
 					Operation: "Top-up by transfer 5EUR",
-					Date:      time.Now(),
+					Date:      utils.ParseTime(time.Now().Format(time.DateTime), t),
 				},
 			},
 			page: models.Page{
@@ -149,14 +150,14 @@ func TestUserRepository_GetTransactions(t *testing.T) {
 					UserId:    1,
 					Amount:    10,
 					Operation: "Debit by transfer 10EUR",
-					Date:      time.Now(),
+					Date:      utils.ParseTime(time.Now().Format(time.DateTime), t),
 				},
 				{
 					ID:        2,
 					UserId:    1,
 					Amount:    5,
 					Operation: "Top-up by transfer 5EUR",
-					Date:      time.Now(),
+					Date:      utils.ParseTime(time.Now().Format(time.DateTime), t),
 				},
 			},
 			page: models.Page{
