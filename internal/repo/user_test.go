@@ -376,6 +376,19 @@ func TestUserRepository_TopUp(t *testing.T) {
 			wantErr:   true,
 			wantedErr: "user not found",
 		},
+		{
+			name: "Failed to begin tx",
+			mock: func(input models.Input) {
+				mock.ExpectBegin().WillReturnError(errors.New("failed to begin tx"))
+			},
+			input: models.Input{
+				UserId: 1,
+				Amount: 10,
+			},
+			want:      0,
+			wantErr:   true,
+			wantedErr: "failed to begin tx",
+		},
 	}
 
 	for _, tt := range tests {
@@ -502,6 +515,59 @@ func TestUserRepository_Debit(t *testing.T) {
 			want:      0,
 			wantErr:   true,
 			wantedErr: "user not found",
+		},
+		{
+			name: "Failed to begin tx",
+			mock: func(input models.Input) {
+				mock.ExpectBegin().WillReturnError(errors.New("failed to begin tx"))
+			},
+			input: models.Input{
+				UserId: 1,
+				Amount: 10,
+			},
+			want:      0,
+			wantErr:   true,
+			wantedErr: "failed to begin tx",
+		},
+		{
+			name: "Select returned error",
+			mock: func(input models.Input) {
+				mock.ExpectBegin()
+
+				mock.ExpectQuery(fmt.Sprintf("SELECT (.+) FROM %s WHERE (.+)", usersTable)).
+					WithArgs(input.UserId).
+					WillReturnError(errors.New("failed to connect to db"))
+
+				mock.ExpectRollback()
+			},
+			input: models.Input{
+				UserId: 1,
+				Amount: 10,
+			},
+			want:      0,
+			wantErr:   true,
+			wantedErr: "failed to connect to db",
+		},
+		{
+			name: "No enough money",
+			mock: func(input models.Input) {
+				mock.ExpectBegin()
+
+				selectRows := sqlmock.NewRows([]string{"balance"}).
+					AddRow(10)
+				mock.ExpectQuery(fmt.Sprintf("SELECT (.+) FROM %s WHERE (.+)", usersTable)).
+					WithArgs(input.UserId).
+					WillReturnRows(selectRows)
+
+				mock.ExpectRollback()
+			},
+			input: models.Input{
+				UserId: 1,
+				Amount: 11,
+			},
+			want:      0,
+			wantErr:   true,
+			wantedErr: "not enough money to perform purchase",
 		},
 	}
 
@@ -742,6 +808,20 @@ func TestUserRepository_Transfer(t *testing.T) {
 			want:      0,
 			wantErr:   true,
 			wantedErr: "user not found",
+		},
+		{
+			name: "Failed to begin tx",
+			mock: func(input models.TransferInput) {
+				mock.ExpectBegin().WillReturnError(errors.New("failed to begin tx"))
+			},
+			input: models.TransferInput{
+				UserId: 1,
+				ToId:   2,
+				Amount: 10,
+			},
+			want:      0,
+			wantErr:   true,
+			wantedErr: "failed to begin tx",
 		},
 	}
 
