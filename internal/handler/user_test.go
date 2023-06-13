@@ -35,6 +35,8 @@ func TestHandler_GetBalance(t *testing.T) {
 		mockBehavior         mockBehavior
 		expectedStatusCode   int
 		expectedResponseBody string
+		incorrectID          string
+		expectIncorrectURL   bool
 	}{
 		{
 			name:     "OK",
@@ -91,6 +93,18 @@ func TestHandler_GetBalance(t *testing.T) {
 			expectedStatusCode:   404,
 			expectedResponseBody: `{"message":"user not found"}`,
 		},
+		{
+			name:     "Incorrect url",
+			userID:   1,
+			currency: "EUR",
+			mockBehavior: func(s *mock_service.MockUser, user int, currency string) {
+				s.EXPECT().GetBalance(user, currency).Return(float32(0), errors.New("user not found")).AnyTimes()
+			},
+			expectedStatusCode:   400,
+			expectedResponseBody: `{"message":"strconv.Atoi: parsing \"abs\": invalid syntax"}`,
+			expectIncorrectURL:   true,
+			incorrectID:          "abs",
+		},
 	}
 
 	for _, testCase := range testTable {
@@ -113,8 +127,14 @@ func TestHandler_GetBalance(t *testing.T) {
 			r.GET("/balance/:user_id", handler.getBalance)
 
 			w := httptest.NewRecorder()
-			req := httptest.NewRequest("GET",
-				fmt.Sprintf("/balance/%d?currency=%s", testCase.userID, testCase.currency), nil)
+			var req *http.Request
+			if !testCase.expectIncorrectURL {
+				req = httptest.NewRequest("GET",
+					fmt.Sprintf("/balance/%d?currency=%s", testCase.userID, testCase.currency), nil)
+			} else {
+				req = httptest.NewRequest("GET",
+					fmt.Sprintf("/balance/%s?currency=%s", testCase.incorrectID, testCase.currency), nil)
+			}
 
 			r.ServeHTTP(w, req)
 
@@ -378,6 +398,17 @@ func TestHandler_TopUp(t *testing.T) {
 			},
 			expectedStatusCode:   500,
 			expectedResponseBody: `{"message":"user not found"}`,
+		},
+		{
+			name: "Incorrect input body",
+			input: models.Input{
+				UserId: 1,
+				Amount: 30,
+			},
+			inputBody:            `dfsdfdsfsdf`,
+			mockBehavior:         func(s *mock_service.MockUser, input models.Input) {},
+			expectedStatusCode:   400,
+			expectedResponseBody: "{\"message\":\"code=400, message=Syntax error: offset=1, error=invalid character 'd' looking for beginning of value, internal=invalid character 'd' looking for beginning of value\"}",
 		},
 	}
 
