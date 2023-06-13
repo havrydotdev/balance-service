@@ -1,6 +1,7 @@
 package repo
 
 import (
+	"database/sql"
 	"errors"
 	"fmt"
 	"github.com/DATA-DOG/go-sqlmock"
@@ -50,15 +51,26 @@ func TestUserRepository_GetBalance(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "User does not exist",
+			name: "Error no rows",
 			mock: func(userID int) {
 				mock.ExpectQuery(fmt.Sprintf("SELECT (.+) FROM %s WHERE (.+)", usersTable)).
-					WithArgs(userID).WillReturnError(errors.New("user not found"))
+					WithArgs(userID).WillReturnError(sql.ErrNoRows)
 			},
 			userID:    100,
 			want:      0,
 			wantErr:   true,
 			wantedErr: "user not found",
+		},
+		{
+			name: "Random error",
+			mock: func(userID int) {
+				mock.ExpectQuery(fmt.Sprintf("SELECT (.+) FROM %s WHERE (.+)", usersTable)).
+					WithArgs(userID).WillReturnError(errors.New("db is not valid"))
+			},
+			userID:    100,
+			want:      0,
+			wantErr:   true,
+			wantedErr: "db is not valid",
 		},
 	}
 
@@ -103,7 +115,7 @@ func TestUserRepository_GetTransactions(t *testing.T) {
 		page      models.Page
 		want      []models.Transaction
 		wantErr   bool
-		wantedErr string
+		wantedErr error
 	}{
 		{
 			name: "Ok",
@@ -142,7 +154,7 @@ func TestUserRepository_GetTransactions(t *testing.T) {
 			name: "User does not exist",
 			mock: func(userID int) {
 				mock.ExpectQuery(fmt.Sprintf("SELECT (.+) FROM %s WHERE (.+) ORDER BY (.+) LIMIT (.+) OFFSET (.+)", transactionsTable)).
-					WithArgs(userID).WillReturnError(errors.New("user not found"))
+					WithArgs(userID).WillReturnError(sql.ErrNoRows)
 			},
 			want: []models.Transaction{
 				{
@@ -166,7 +178,76 @@ func TestUserRepository_GetTransactions(t *testing.T) {
 				Sort:  "date",
 			},
 			wantErr:   true,
-			wantedErr: "user not found",
+			wantedErr: errors.New("user not found"),
+		},
+		{
+			name: "Random error",
+			mock: func(userID int) {
+				mock.ExpectQuery(fmt.Sprintf("SELECT (.+) FROM %s WHERE (.+) ORDER BY (.+) LIMIT (.+) OFFSET (.+)", transactionsTable)).
+					WithArgs(userID).WillReturnError(errors.New("db is not valid"))
+			},
+			want: []models.Transaction{
+				{
+					ID:        1,
+					UserId:    1,
+					Amount:    10,
+					Operation: "Debit by transfer 10EUR",
+					Date:      utils.ParseTime(time.Now().Format(time.DateTime), t),
+				},
+				{
+					ID:        2,
+					UserId:    1,
+					Amount:    5,
+					Operation: "Top-up by transfer 5EUR",
+					Date:      utils.ParseTime(time.Now().Format(time.DateTime), t),
+				},
+			},
+			page: models.Page{
+				Page:  1,
+				Limit: 10,
+				Sort:  "date",
+			},
+			wantErr:   true,
+			wantedErr: errors.New("db is not valid"),
+		},
+		{
+			name: "Failed to convert date",
+			mock: func(userID int) {
+				rows := sqlmock.NewRows([]string{"id", "user_id", "amount", "operation", "date"}).
+					AddRow(1, 2, 100, "", "1849q9")
+
+				mock.ExpectQuery(fmt.Sprintf("SELECT (.+) FROM %s WHERE (.+) ORDER BY (.+) LIMIT (.+) OFFSET (.+)", transactionsTable)).
+					WithArgs(userID).WillReturnRows(rows)
+			},
+			want: []models.Transaction{
+				{
+					ID:        1,
+					UserId:    1,
+					Amount:    10,
+					Operation: "Debit by transfer 10EUR",
+					Date:      utils.ParseTime(time.Now().Format(time.DateTime), t),
+				},
+				{
+					ID:        2,
+					UserId:    1,
+					Amount:    5,
+					Operation: "Top-up by transfer 5EUR",
+					Date:      utils.ParseTime(time.Now().Format(time.DateTime), t),
+				},
+			},
+			page: models.Page{
+				Page:  1,
+				Limit: 10,
+				Sort:  "date",
+			},
+			wantErr: true,
+			wantedErr: &time.ParseError{
+				Layout:     "2006-01-02 15:04:05",
+				Value:      "1849q9",
+				LayoutElem: "-",
+				ValueElem:  "q9",
+				Message:    "",
+			},
 		},
 	}
 
@@ -177,7 +258,7 @@ func TestUserRepository_GetTransactions(t *testing.T) {
 			got, err := r.GetTransactions(tt.userID, tt.page)
 			if tt.wantErr {
 				assert.Error(t, err)
-				assert.Equal(t, err, errors.New(tt.wantedErr))
+				assert.Equal(t, err, tt.wantedErr)
 			} else {
 				assert.NoError(t, err)
 				assert.Equal(t, tt.want, got)
