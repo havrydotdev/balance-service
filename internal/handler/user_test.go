@@ -495,6 +495,19 @@ func TestHandler_Debit(t *testing.T) {
 			expectedStatusCode:   500,
 			expectedResponseBody: `{"message":"user not found"}`,
 		},
+		{
+			name: "Incorrect URL",
+			input: models.Input{
+				UserId: 1,
+				Amount: 30,
+			},
+			inputBody: `dsalknfdlf14`,
+			mockBehavior: func(s *mock_service.MockUser, input models.Input) {
+				s.EXPECT().Debit(input).Return(float32(0), errors.New("user not found")).AnyTimes()
+			},
+			expectedStatusCode:   400,
+			expectedResponseBody: "{\"message\":\"code=400, message=Syntax error: offset=1, error=invalid character 'd' looking for beginning of value, internal=invalid character 'd' looking for beginning of value\"}",
+		},
 	}
 
 	for _, testCase := range testTable {
@@ -582,6 +595,34 @@ func TestHandler_Transfer(t *testing.T) {
 			},
 			expectedStatusCode:   400,
 			expectedResponseBody: `{"message":"incorrect to id"}`,
+		},
+		{
+			name: "Incorrect input body",
+			input: models.TransferInput{
+				UserId: 1,
+				ToId:   0,
+				Amount: 4.13,
+			},
+			inputBody: `da90fd-9sfs2k13l1`,
+			mockBehavior: func(s *mock_service.MockUser, input models.TransferInput) {
+				s.EXPECT().Transfer(input).Return(4.13-input.Amount, nil).AnyTimes()
+			},
+			expectedStatusCode:   400,
+			expectedResponseBody: "{\"message\":\"code=400, message=Syntax error: offset=1, error=invalid character 'd' looking for beginning of value, internal=invalid character 'd' looking for beginning of value\"}",
+		},
+		{
+			name: "Some error from repo",
+			input: models.TransferInput{
+				UserId: 1,
+				ToId:   2,
+				Amount: 100,
+			},
+			inputBody: `{"user_id":1,"to_id":2,"amount":100}`,
+			mockBehavior: func(s *mock_service.MockUser, input models.TransferInput) {
+				s.EXPECT().Transfer(input).Return(float32(0), errors.New("user not found"))
+			},
+			expectedStatusCode:   500,
+			expectedResponseBody: `{"message":"user not found"}`,
 		},
 	}
 
