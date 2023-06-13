@@ -14,6 +14,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
 	"math"
+	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
@@ -161,6 +162,8 @@ func TestHandler_GetTransactions(t *testing.T) {
 		mockBehavior         mockBehavior
 		expectedStatusCode   int
 		expectedResponseBody string
+		incorrectID          string
+		expectIncorrectURL   bool
 	}{
 		{
 			name:   "OK",
@@ -235,6 +238,50 @@ func TestHandler_GetTransactions(t *testing.T) {
 			expectedResponseBody: fmt.Sprintf(`[{"id":8,"user_id":3,"amount":101,"operation":"","date":"%s"},{"id":9,"user_id":3,"amount":103,"operation":"","date":"%s"}]`,
 				time.DateTime, time.DateTime),
 		},
+		{
+			name:   "Incorrect user id",
+			userID: 0,
+			page: models.Page{
+				Page:  3,
+				Limit: 2,
+				Sort:  "id",
+			},
+			mockBehavior: func(s *mock_service.MockUser, userID int, page models.Page) {
+				s.EXPECT().GetTransactions(userID, page).Return(nil, errors.New("user not found")).AnyTimes()
+			},
+			expectedStatusCode:   400,
+			expectedResponseBody: `{"message":"incorrect user id"}`,
+		},
+		{
+			name:   "String user id",
+			userID: 1,
+			page: models.Page{
+				Page:  3,
+				Limit: 2,
+				Sort:  "id",
+			},
+			mockBehavior: func(s *mock_service.MockUser, userID int, page models.Page) {
+				s.EXPECT().GetTransactions(userID, page).Return(nil, errors.New("user not found")).AnyTimes()
+			},
+			expectedStatusCode:   400,
+			expectedResponseBody: `{"message":"strconv.Atoi: parsing \"abs\": invalid syntax"}`,
+			incorrectID:          "abs",
+			expectIncorrectURL:   true,
+		},
+		{
+			name:   "Error from repo",
+			userID: 1,
+			page: models.Page{
+				Page:  3,
+				Limit: 2,
+				Sort:  "id",
+			},
+			mockBehavior: func(s *mock_service.MockUser, userID int, page models.Page) {
+				s.EXPECT().GetTransactions(userID, page).Return(nil, errors.New("user not found"))
+			},
+			expectedStatusCode:   500,
+			expectedResponseBody: `{"message":"user not found"}`,
+		},
 	}
 
 	for _, testCase := range testTable {
@@ -257,12 +304,22 @@ func TestHandler_GetTransactions(t *testing.T) {
 			r.GET("/transactions/:user_id", handler.getTransactions)
 
 			w := httptest.NewRecorder()
-			req := httptest.NewRequest("GET",
-				fmt.Sprintf("/transactions/%d?page=%d&limit=%d&sort=%s",
-					testCase.userID,
-					testCase.page.Page,
-					testCase.page.Limit,
-					testCase.page.Sort), nil)
+			var req *http.Request
+			if !testCase.expectIncorrectURL {
+				req = httptest.NewRequest("GET",
+					fmt.Sprintf("/transactions/%d?page=%d&limit=%d&sort=%s",
+						testCase.userID,
+						testCase.page.Page,
+						testCase.page.Limit,
+						testCase.page.Sort), nil)
+			} else {
+				req = httptest.NewRequest("GET",
+					fmt.Sprintf("/transactions/%s?page=%d&limit=%d&sort=%s",
+						testCase.incorrectID,
+						testCase.page.Page,
+						testCase.page.Limit,
+						testCase.page.Sort), nil)
+			}
 
 			r.ServeHTTP(w, req)
 
