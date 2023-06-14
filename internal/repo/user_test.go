@@ -389,6 +389,30 @@ func TestUserRepository_TopUp(t *testing.T) {
 			wantErr:   true,
 			wantedErr: "failed to begin tx",
 		},
+		{
+			name: "Update failed",
+			mock: func(input models.Input) {
+				mock.ExpectBegin()
+
+				selectRows := sqlmock.NewRows([]string{"balance"}).
+					AddRow(10)
+				mock.ExpectQuery(fmt.Sprintf("SELECT (.+) FROM %s WHERE (.+)", usersTable)).
+					WithArgs(input.UserId).
+					WillReturnRows(selectRows)
+
+				mock.ExpectExec(fmt.Sprintf("UPDATE %s SET (.+) WHERE (.+) RETURNING (.+)", usersTable)).
+					WithArgs(input.UserId).WillReturnError(errors.New("no rows in a result set"))
+
+				mock.ExpectRollback()
+			},
+			input: models.Input{
+				UserId: 1,
+				Amount: 10,
+			},
+			want:      0,
+			wantErr:   true,
+			wantedErr: "no rows in a result set",
+		},
 	}
 
 	for _, tt := range tests {
@@ -463,7 +487,7 @@ func TestUserRepository_Debit(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "Failed to insert",
+			name: "Insert returned rowsAffected = 0",
 			mock: func(input models.Input) {
 				mock.ExpectBegin()
 
@@ -568,6 +592,35 @@ func TestUserRepository_Debit(t *testing.T) {
 			want:      0,
 			wantErr:   true,
 			wantedErr: "not enough money to perform purchase",
+		},
+		{
+			name: "Insert returned error",
+			mock: func(input models.Input) {
+				mock.ExpectBegin()
+
+				selectRows := sqlmock.NewRows([]string{"balance"}).
+					AddRow(10)
+				mock.ExpectQuery(fmt.Sprintf("SELECT (.+) FROM %s WHERE (.+)", usersTable)).
+					WithArgs(input.UserId).
+					WillReturnRows(selectRows)
+
+				mock.ExpectExec(fmt.Sprintf("UPDATE %s SET (.+) WHERE (.+) RETURNING (.+)", usersTable)).
+					WithArgs(input.UserId).WillReturnResult(sqlmock.NewResult(1, 1))
+
+				date := time.Now().Format("01-02-2006 15:04:05")
+				mock.ExpectExec(fmt.Sprintf("INSERT INTO %s", transactionsTable)).
+					WithArgs(input.UserId, input.Amount, fmt.Sprintf("Debit by purchase %fEUR", input.Amount), date).
+					WillReturnError(errors.New("failed to insert"))
+
+				mock.ExpectRollback()
+			},
+			input: models.Input{
+				UserId: 1,
+				Amount: 10,
+			},
+			want:      0,
+			wantErr:   true,
+			wantedErr: "failed to insert",
 		},
 	}
 
