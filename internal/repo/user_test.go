@@ -876,6 +876,82 @@ func TestUserRepository_Transfer(t *testing.T) {
 			wantErr:   true,
 			wantedErr: "failed to begin tx",
 		},
+		{
+			name: "Insert returned incorrect driver.Result",
+			mock: func(input models.TransferInput) {
+				mock.ExpectBegin()
+
+				selectRows2 := sqlmock.NewRows([]string{"balance"}).
+					AddRow(10)
+
+				mock.ExpectQuery(fmt.Sprintf("SELECT (.+) FROM %s WHERE (.+)", usersTable)).
+					WithArgs(input.UserId).
+					WillReturnRows(selectRows2)
+
+				mock.ExpectExec(fmt.Sprintf("UPDATE %s SET (.+) WHERE (.+) RETURNING (.+)", usersTable)).
+					WithArgs(input.UserId).WillReturnResult(sqlmock.NewResult(1, 1))
+
+				date2 := time.Now().Format("01-02-2006 15:04:05")
+				result2 := sqlmock.NewErrorResult(errors.New("incorrect rowsAffected value"))
+
+				mock.ExpectExec(fmt.Sprintf("INSERT INTO %s", transactionsTable)).
+					WithArgs(input.UserId, input.Amount, fmt.Sprintf("Debit by transfer %fEUR", input.Amount), date2).
+					WillReturnResult(result2)
+
+				mock.ExpectRollback()
+			},
+			input: models.TransferInput{
+				UserId: 1,
+				ToId:   2,
+				Amount: 10,
+			},
+			want:      0,
+			wantErr:   true,
+			wantedErr: "incorrect rowsAffected value",
+		},
+		{
+			name: "Update returned incorrect driver.Result",
+			mock: func(input models.TransferInput) {
+				mock.ExpectBegin()
+
+				selectRows2 := sqlmock.NewRows([]string{"balance"}).
+					AddRow(10)
+
+				mock.ExpectQuery(fmt.Sprintf("SELECT (.+) FROM %s WHERE (.+)", usersTable)).
+					WithArgs(input.UserId).
+					WillReturnRows(selectRows2)
+
+				mock.ExpectExec(fmt.Sprintf("UPDATE %s SET (.+) WHERE (.+) RETURNING (.+)", usersTable)).
+					WithArgs(input.UserId).WillReturnResult(sqlmock.NewResult(1, 1))
+
+				date2 := time.Now().Format("01-02-2006 15:04:05")
+				result2 := sqlmock.NewResult(1, 1)
+
+				mock.ExpectExec(fmt.Sprintf("INSERT INTO %s", transactionsTable)).
+					WithArgs(input.UserId, input.Amount, fmt.Sprintf("Debit by transfer %fEUR", input.Amount), date2).
+					WillReturnResult(result2)
+
+				selectRows1 := sqlmock.NewRows([]string{"balance"}).
+					AddRow(10)
+
+				mock.ExpectQuery(fmt.Sprintf("SELECT (.+) FROM %s WHERE (.+)", usersTable)).
+					WithArgs(input.ToId).
+					WillReturnRows(selectRows1)
+
+				mock.ExpectExec(fmt.Sprintf("UPDATE %s SET (.+) WHERE (.+) RETURNING (.+)", usersTable)).
+					WithArgs(input.ToId).WillReturnResult(sqlmock.NewErrorResult(errors.New("incorrect rowsAffected value")))
+
+				mock.ExpectRollback()
+			},
+			input: models.TransferInput{
+				UserId: 1,
+				ToId:   2,
+				Amount: 10,
+			},
+			want:      0,
+			wantErr:   true,
+			wantedErr: "incorrect rowsAffected value",
+		},
 	}
 
 	for _, tt := range tests {
