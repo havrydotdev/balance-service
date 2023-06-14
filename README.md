@@ -76,12 +76,12 @@ Full description in [TASK](TASK.md).
         - amount - transfer amount in EUR.
 # Starting
 
-## First use:
+## Build docker-compose:
 ```sh
 make compose-build
 ```
 
-## Then:
+## Start container:
 ```sh
 make compose-up
 ```
