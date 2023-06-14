@@ -27,7 +27,7 @@ Full description in [TASK](TASK.md).
 - Working with Postgres using [sqlx](https://github.com/jmoiron/sqlx) and writing SQL queries.
 - App configuration with [viper](https://github.com/spf13/viper) library.
 - Launching with Docker.
-- Unit/Integration testing using mocks [testify](https://github.com/stretchr/testify), [mock](https://github.com/golang/mock).
+- Unit/Integration testing using mocks [testify](https://github.com/stretchr/testify), [sqlmock](https://github.com/DATA-DOG/go-sqlmock), [gomock](https://github.com/golang/mock/gomock).
 
 **Project structure:**
 ```
