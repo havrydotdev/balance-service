@@ -81,7 +81,7 @@ Full description in [TASK](TASK.md).
 make compose-build
 ```
 
-# Then:
+## Then:
 ```sh
 make compose-up
 ```
