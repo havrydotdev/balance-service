@@ -18,6 +18,7 @@ Develop a microservice for working with users' balance (balance, crediting / deb
 The service must provide an HTTP API and accept/return requests/responses in JSON format.
 Additionally, implement methods for converting the balance and obtaining a list of transactions.
 Full description in [TASK](TASK.md).
+
 # Implementation
 
 - Following the REST API design.
@@ -48,275 +49,188 @@ Full description in [TASK](TASK.md).
 
 # Endpoints
 
-- GET /balance/ - получение баланса пользователя
-    - Тело запроса:
-        - user_id - уникальный идентификатор пользователя.
-  - Параметры запроса:
-      - currency - валюта баланса.
-- GET /transaction/ - получение транзакций пользователя
-    - Тело запроса:
-        - user_id - уникальный идентификатор пользователя.
-    - Параметры запроса:
+- GET /balance/{user_id} - get user`s balance
+    - URL variables:
+        - user_id - unique user`s id.
+    - Query params:
+      - currency - convert user`s balance to currency (EUR by default).
+- GET /transactions/{user_id} - get user`s transactions
+    - URL variables:
+        - user_id - unique user`s id.
+    - Query params:
+        - page
+        - limit - number of transactions per page 
         - sort - сортировка списка транзакций.
-- POST /top-up/ - пополнение баланса пользователя
-    - Тело запроса:
+- POST /top-up/{user_id} - replenishment of the user's balance
+    - Request body:
+        - user_id - unique user`s id,
+        - amount - replenishment amount in EUR.
+- POST /debit/{user_id} - write-off from the user's balance
+    - Request body:
         - user_id - идентификатор пользователя,
-        - amount - сумма пополнения в RUB.
-- POST /debit/ - списание из баланса пользователя
-    - Тело запроса:
-        - user_id - идентификатор пользователя,
-        - amount - сумма списания в RUB.
-- POST /transfer/ - перевод средств на баланс другого пользователя
-    - Тело запроса:
-        - user_id - идентификатор пользователя, с баланса которого списываются средства,
-        - to_id - идентификатор пользователя, на баланс которого начисляются средства,
-        - amount - сумма перевода в RUB.
+        - amount - replenishment amount in EUR.
+- POST /transfer/ - transferring funds to the balance of another user
+    - Request body:
+        - user_id - id of the user from whose balance funds are debited,
+        - to_id - id of the user whose balance the funds are credited to,
+        - amount - transfer amount in EUR.
 # Starting
 
-```
-make build
-make run
+## First use:
+```sh
+make compose-build
 ```
 
-Если приложение запускается впервые, необходимо применить миграции к базе данных:
-
-```
-make migrate-up
+# Then:
+```sh
+make compose-up
 ```
 
 # Testing
 
-Локальный запуск тестов:
+To run tests, use:
 ```
-make run-test
+make test
 ```
 
 # Examples
 
-Запросы сгенерированы из Postman для cURL.
+### 1. GET  /balance for _user_id=1_
 
-### 1. GET  /balance для _user_id=1_
-
-**Запрос:**
+**Request:**
 ```
-$ curl --location --request GET 'localhost:8000/balance' \
---header 'Content-Type: application/json' \
---data-raw '{
-    "user_id":1
-}'
+$ curl --location --request GET 'localhost:8080/balance/1' \
+--header 'Content-Type: application/json'
 ```
-**Тело ответа:**
+**Response body:**
 ```
 {
     "user_id": 1,
-    "balance": 1000
+    "balance": 4.13
 }
 ```
 
-### 2. GET /balance для _user_id=1_ и _currency=USD_
+### 2. GET /balance for _user_id=1_ and _currency=USD_
 
-**Запрос:**
+**Request:**
 ```
-$ curl --location --request GET 'localhost:8000/balance?currency=USD' \
---header 'Content-Type: application/json' \
---data-raw '{
-    "user_id":1
-}'
+$ curl --location --request GET 'localhost:8080/balance/1?currency=UAH' \
+--header 'Content-Type: application/json'
 ```
-**Тело ответа:**
+**Response body:**
 ```
 {
     "user_id": 1,
-    "balance": 13.542863492536123
+    "balance": 165.43
 }
 ```
 
-### 3. GET /transaction для _user_id=1_
+### 3. GET /transactions for _user_id=1_, _page=1_, _limit=1_, _sort=date_
 
-**Запрос:**
+**Request:**
 ```
-$ curl --location --request GET 'localhost:8000/transaction' \
---header 'Content-Type: application/json' \
---data-raw '{
-    "user_id":1
-}'
+$ curl --location --request GET 'localhost:8080/transactions/1?page=1&limit=1&sort=date' \
+--header 'Content-Type: application/json'
 ```
-**Тело ответа:**
+**Response body:**
+```
+[
+   {
+        "id": 1,
+        "user_id": 1,
+        "amount": 30,
+        "operation": "",
+        "date": "2023-06-14 02:19:40"
+   }
+]
+```
+
+### 4. GET /transactions for _user_id=2_, _page=1_, _limit=1_, _sort=date_
+
+```
+$ curl --location --request GET 'localhost:8080/transactions/2?page=1&limit=2&sort=date' \
+--header 'Content-Type: application/json'
+```
+**Response body:**
 ```
 [
     {
-        "transaction_id": 3,
-        "user_id": 1,
-        "amount": 100,
-        "operation": "Top-up by bank_card 100.000000RUB",
-        "date": "2021-12-06T13:05:42Z"
+        "id": 2,
+        "user_id": 2,
+        "amount": 101,
+        "operation": "",
+        "date": "2023-06-14 02:19:40"
     },
     {
-        "transaction_id": 4,
-        "user_id": 1,
-        "amount": 10000,
-        "operation": "Top-up by bank_card 10000.000000RUB",
-        "date": "2021-12-06T13:05:53Z"
-    },
-    {
-        "transaction_id": 5,
-        "user_id": 1,
-        "amount": 100,
-        "operation": "Debit by transfer 100.000000RUB",
-        "date": "2021-12-06T13:06:02Z"
-    },
-    {
-        "transaction_id": 7,
-        "user_id": 1,
-        "amount": 9000,
-        "operation": "Debit by purchase 9000.000000RUB",
-        "date": "2021-12-06T15:50:15Z"
+        "id": 3,
+        "user_id": 2,
+        "amount": 32,
+        "operation": "",
+        "date": "2023-06-14 02:19:40"
     }
 ]
 ```
 
-### 4. GET /transaction для _user_id=1, sort=date_
+### 5. POST /top-up for _user_id=1, amount=1000_
 
-**Запрос:**
+**Request:**
 ```
-$ curl --location --request GET 'localhost:8000/transaction?sort=date' \
---header 'Content-Type: application/json' \
---data-raw '{
-    "user_id":1
-}'
-```
-**Тело ответа:**
-```
-[
-    {
-        "transaction_id": 7,
-        "user_id": 1,
-        "amount": 9000,
-        "operation": "Debit by purchase 9000.000000RUB",
-        "date": "2021-12-06T15:50:15Z"
-    },
-    {
-        "transaction_id": 5,
-        "user_id": 1,
-        "amount": 100,
-        "operation": "Debit by transfer 100.000000RUB",
-        "date": "2021-12-06T13:06:02Z"
-    },
-    {
-        "transaction_id": 4,
-        "user_id": 1,
-        "amount": 10000,
-        "operation": "Top-up by bank_card 10000.000000RUB",
-        "date": "2021-12-06T13:05:53Z"
-    },
-    {
-        "transaction_id": 3,
-        "user_id": 1,
-        "amount": 100,
-        "operation": "Top-up by bank_card 100.000000RUB",
-        "date": "2021-12-06T13:05:42Z"
-    }
-]
-```
-
-### 5. GET /transaction для _user_id=1, sort=amount_
-
-**Запрос:**
-```
-$ curl --location --request GET 'localhost:8000/transaction?sort=amount' \
---header 'Content-Type: application/json' \
---data-raw '{
-    "user_id":1
-}'
-```
-**Тело ответа:**
-```
-[
-    {
-        "transaction_id": 4,
-        "user_id": 1,
-        "amount": 10000,
-        "operation": "Top-up by bank_card 10000.000000RUB",
-        "date": "2021-12-06T13:05:53Z"
-    },
-    {
-        "transaction_id": 7,
-        "user_id": 1,
-        "amount": 9000,
-        "operation": "Debit by purchase 9000.000000RUB",
-        "date": "2021-12-06T15:50:15Z"
-    },
-    {
-        "transaction_id": 3,
-        "user_id": 1,
-        "amount": 100,
-        "operation": "Top-up by bank_card 100.000000RUB",
-        "date": "2021-12-06T13:05:42Z"
-    },
-    {
-        "transaction_id": 5,
-        "user_id": 1,
-        "amount": 100,
-        "operation": "Debit by transfer 100.000000RUB",
-        "date": "2021-12-06T13:06:02Z"
-    }
-]
-```
-
-### 6. POST /top-up для _user_id=1, amount=1000_
-
-**Запрос:**
-```
-$ curl --location --request POST 'localhost:8000/top-up' \
+$ curl --location --request POST 'localhost:8080/top-up' \
 --header 'Content-Type: application/json' \
 --data-raw '{
     "user_id":1,
     "amount":1000
 }'
 ```
-**Тело ответа:**
+**Response body:**
 ```
 {
     "user_id": 1,
-    "balance": 1000
+    "balance": 1004.13
 }
 ```
 
-### 7. POST /debit для _user_id=1, amount=1000_
+### 6. POST /debit for _user_id=1, amount=1000_
 
-**Запрос:**
+**Request:**
 ```
-$ curl --location --request POST 'localhost:8000/debit' \
+$ curl --location --request POST 'localhost:8080/debit' \
 --header 'Content-Type: application/json' \
 --data-raw '{
     "user_id":1,
     "amount":1000
 }'
 ```
-**Тело ответа:**
+**Response body:**
 ```
 {
     "user_id": 1,
-    "balance": 0
+    "balance": 4.13
+}
+```
+**But if you try to do it again, there will no enough money to perform debit:**
+```
+{
+    "message": "not enough money to perform purchase"
 }
 ```
 
-### 8. POST /transfer для _user_id=1, to_id=2, amount=1000_
+### 7. POST /transfer for _user_id=1, to_id=2, amount=1000_
 
-**Запрос:**
+**Request:**
 ```
-$ curl --location --request POST 'localhost:8000/transfer' \
+$ curl --location --request POST 'localhost:8080/transfer' \
 --header 'Content-Type: application/json' \
 --data-raw '{
     "user_id":1,
     "to_id":2,
-    "amount":1000
+    "amount":1
 }'
 ```
 **Тело ответа:**
 ```
 {
     "user_id": 2,
-    "balance": 1000
+    "balance": 33
 }
 ```
