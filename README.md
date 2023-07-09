@@ -227,7 +227,7 @@ $ curl --location --request POST 'localhost:8080/transfer' \
     "amount":1
 }'
 ```
-**Тело ответа:**
+**Response body:**
 ```
 {
     "user_id": 2,
