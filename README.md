@@ -50,28 +50,31 @@ Full description in [TASK](TASK.md).
 # Endpoints
 
 - GET /balance/{user_id} - get user`s balance
-    - URL variables:
+    - Path variables:
         - user_id - unique user`s id.
     - Query params:
       - currency - convert user`s balance to currency (EUR by default).
 - GET /transactions/{user_id} - get user`s transactions
-    - URL variables:
+    - Path variables:
         - user_id - unique user`s id.
     - Query params:
         - page
         - limit - number of transactions per page 
-        - sort - сортировка списка транзакций.
+        - sort
 - POST /top-up/{user_id} - replenishment of the user's balance
-    - Request body:
+    - Path variables:
         - user_id - unique user`s id,
+    - Request body:
         - amount - replenishment amount in EUR.
 - POST /debit/{user_id} - write-off from the user's balance
+    - Path variables:
+        - user_id - unique user`s id,
     - Request body:
-        - user_id - идентификатор пользователя,
         - amount - replenishment amount in EUR.
 - POST /transfer/ - transferring funds to the balance of another user
+    - Path variables:
+        - user_id - unique user`s id,
     - Request body:
-        - user_id - id of the user from whose balance funds are debited,
         - to_id - id of the user whose balance the funds are credited to,
         - amount - transfer amount in EUR.
 # Starting
